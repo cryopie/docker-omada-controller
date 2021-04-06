@@ -6,20 +6,23 @@ docker image based off of ubuntu:18.04 for [TP-Link Omada Controller](https://ww
 
 ### Tags for `amd64`
 
-* `latest`, `4.1` - Omada Controller 4.1.x (currently 4.1.5)
-* `3.2` - Omada Controller 3.2.x (currently 3.2.10)
+* `latest`, `4.2` - Omada Controller 4.2.x (currently 4.2.11)
+* `4.1` - Omada Controller 4.1.x (currently 4.1.5)
+* `3.2` - Omada Controller 3.2.x (currently 3.2.14)
 * `3.1` - Omada Controller 3.1.x (currently 3.1.13)
 * `3.0` - Omada Controller 3.0.x (currently 3.0.5)
 
 ### Tags for `armv7l`
 
-* `latest-armv7l`, `4.1-armv7l` - Omada Controller 4.1.x (currently 4.1.5)
-* `3.2-armv7l` - Omada Controller 3.2.x (currently 3.2.10)
+* `latest-armv7l`, `4.2-armv7l` - Omada Controller 4.2.x (currently 4.2.11)
+* `4.1-armv7l` - Omada Controller 4.1.x (currently 4.1.5)
+* `3.2-armv7l` - Omada Controller 3.2.x (currently 3.2.14)
 
 ### Tags for `arm64`
 
-* `latest-arm64`, `4.1-arm64` - Omada Controller 4.1.x (currently 4.1.5)
-* `3.2-arm64` - Omada Controller 3.2.x (currently 3.2.10)
+* `latest-arm64`, `4.2-arm64` - Omada Controller 4.2.x (currently 4.2.11)
+* `4.1-arm64` - Omada Controller 4.1.x (currently 4.1.5)
+* `3.2-arm64` - Omada Controller 3.2.x (currently 3.2.14)
 
 ## Issues
 
@@ -47,11 +50,75 @@ The upgrade to the 4.1.x version is not a seamless upgrade and can't be done in 
 
 </details>
 
+## Building images
+
+<details>
+<summary>Click to expand docker build instructions</summary>
+
+As of the Omada Controller version 4.2.x, the Dockerfiles have been simplified so that there is a unified Dockerfile.  There are some differences between the build steps for `amd64`, `arm64`, and `armv7l`.  These changes will happen automatically if you use the following build-args:
+
+### `amd64`
+
+  No build args required; set for the default build-args
+
+  ```
+  docker build -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.2 .
+  ```
+
+### `arm64`
+
+  Only the `ARCH` build-arg is required
+
+  ```
+  docker build --build-arg ARCH="arm64" -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.2-arm64 .
+  ```
+
+### `armv7l`
+
+  Both the `ARCH` and `BASE` build-args are required
+
+  ```
+  docker build --build-arg ARCH="armv7l" --build-arg BASE="ubuntu:16.04" -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.2-armv7l .
+  ```
+</details>
+
 ## Example usage
 
-**Warning**: running with the specific ports being published currently does not work - APs can't be discovered.  Use `host` networking or something like `macvlan` to directly connect the container on it's own IP to the network.  See #45.
-
 To run this Docker image and keep persistent data in named volumes:
+
+### Using port mapping
+
+```
+docker run -d \
+  --name omada-controller \
+  --restart unless-stopped \
+  -p 8088:8088 \
+  -p 8043:8043 \
+  -p 8843:8843 \
+  -p 29810:29810 \
+  -p 29810:29810/udp \
+  -p 29811:29811 \
+  -p 29811:29811/udp \
+  -p 29812:29812 \
+  -p 29812:29812/udp \
+  -p 29813:29813 \
+  -p 29813:29813/udp \
+  -e MANAGE_HTTP_PORT=8088 \
+  -e MANAGE_HTTPS_PORT=8043 \
+  -e PORTAL_HTTP_PORT=8088 \
+  -e PORTAL_HTTPS_PORT=8843 \
+  -e SHOW_SERVER_LOGS=true \
+  -e SHOW_MONGODB_LOGS=false \
+  -e SSL_CERT_NAME="tls.crt" \
+  -e SSL_KEY_NAME="tls.key" \
+  -e TZ=Etc/UTC \
+  -v omada-data:/opt/tplink/EAPController/data \
+  -v omada-work:/opt/tplink/EAPController/work \
+  -v omada-logs:/opt/tplink/EAPController/logs \
+  mbentley/omada-controller:4.2
+```
+
+### Using `net=host`
 
 ```
 docker run -d \
@@ -70,12 +137,46 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.1
+  mbentley/omada-controller:4.2
 ```
 
 <details>
 <summary>Example usage for armv7l</summary>
 
+### Using port mapping
+
+```
+docker run -d \
+  --name omada-controller \
+  --restart unless-stopped \
+  -p 8088:8088 \
+  -p 8043:8043 \
+  -p 8843:8843 \
+  -p 29810:29810 \
+  -p 29810:29810/udp \
+  -p 29811:29811 \
+  -p 29811:29811/udp \
+  -p 29812:29812 \
+  -p 29812:29812/udp \
+  -p 29813:29813 \
+  -p 29813:29813/udp \
+  -e MANAGE_HTTP_PORT=8088 \
+  -e MANAGE_HTTPS_PORT=8043 \
+  -e PORTAL_HTTP_PORT=8088 \
+  -e PORTAL_HTTPS_PORT=8843 \
+  -e SHOW_SERVER_LOGS=true \
+  -e SHOW_MONGODB_LOGS=false \
+  -e SSL_CERT_NAME="tls.crt" \
+  -e SSL_KEY_NAME="tls.key" \
+  -e TZ=Etc/UTC \
+  -v omada-data:/opt/tplink/EAPController/data \
+  -v omada-work:/opt/tplink/EAPController/work \
+  -v omada-logs:/opt/tplink/EAPController/logs \
+  mbentley/omada-controller:4.2-armv7l
+```
+
+### Using `net=host`
+
 ```
 docker run -d \
   --name omada-controller \
@@ -93,13 +194,47 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.1-armv7l
+  mbentley/omada-controller:4.2-armv7l
 ```
 </details>
 
 <details>
 <summary>Example usage for arm64</summary>
 
+### Using port mapping
+
+```
+docker run -d \
+  --name omada-controller \
+  --restart unless-stopped \
+  -p 8088:8088 \
+  -p 8043:8043 \
+  -p 8843:8843 \
+  -p 29810:29810 \
+  -p 29810:29810/udp \
+  -p 29811:29811 \
+  -p 29811:29811/udp \
+  -p 29812:29812 \
+  -p 29812:29812/udp \
+  -p 29813:29813 \
+  -p 29813:29813/udp \
+  -e MANAGE_HTTP_PORT=8088 \
+  -e MANAGE_HTTPS_PORT=8043 \
+  -e PORTAL_HTTP_PORT=8088 \
+  -e PORTAL_HTTPS_PORT=8843 \
+  -e SHOW_SERVER_LOGS=true \
+  -e SHOW_MONGODB_LOGS=false \
+  -e SSL_CERT_NAME="tls.crt" \
+  -e SSL_KEY_NAME="tls.key" \
+  -e TZ=Etc/UTC \
+  -v omada-data:/opt/tplink/EAPController/data \
+  -v omada-work:/opt/tplink/EAPController/work \
+  -v omada-logs:/opt/tplink/EAPController/logs \
+  mbentley/omada-controller:4.2-arm64
+```
+
+### Using `net=host`
+
 ```
 docker run -d \
   --name omada-controller \
@@ -117,7 +252,7 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.1-arm64
+  mbentley/omada-controller:4.2-arm64
 ```
 </details>
 
