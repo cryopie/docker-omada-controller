@@ -14,6 +14,7 @@ SHOW_SERVER_LOGS="${SHOW_SERVER_LOGS:-true}"
 SHOW_MONGODB_LOGS="${SHOW_MONGODB_LOGS:-false}"
 SSL_CERT_NAME="${SSL_CERT_NAME:-tls.crt}"
 SSL_KEY_NAME="${SSL_KEY_NAME:-tls.key}"
+TLS_1_11_ENABLED="${TLS_1_11_ENABLED:-false}"
 
 # set default time zone and notify user of time zone
 echo "INFO: Time zone set to '${TZ}'"
@@ -26,21 +27,15 @@ then
 fi
 
 set_port_property() {
-  if [ -f "/opt/tplink/EAPController/data/db/storage.bson" ]
+  # check to see if we are trying to bind to privileged port
+  if [ "${3}" -lt "1024" ] && [ "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)" = "1024" ]
   then
-    echo "WARNING: Unable to change '${1}' to ${3} after initial run; change the ports via the web UI"
-  else
-
-    # check to see if we are trying to bind to privileged port
-    if [ "${3}" -lt "1024" ] && [ "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)" = "1024" ]
-    then
-      echo "ERROR: Unable to set '${1}' to $3; 'ip_unprivileged_port_start' has not been set.  See https://github.com/mbentley/docker-omada-controller#unprivileged-ports"
-      exit 1
-    fi
-
-    echo "INFO: Setting '${1}' to ${3}"
-    sed -i "s/^${1}=${2}$/${1}=${3}/g" /opt/tplink/EAPController/properties/omada.properties
+    echo "ERROR: Unable to set '${1}' to ${3}; 'ip_unprivileged_port_start' has not been set.  See https://github.com/mbentley/docker-omada-controller#unprivileged-ports"
+    exit 1
   fi
+
+  echo "INFO: Setting '${1}' to ${3} in omada.properties"
+  sed -i "s/^${1}=${2}$/${1}=${3}/g" /opt/tplink/EAPController/properties/omada.properties
 }
 
 # replace MANAGE_HTTP_PORT if not the default
@@ -112,6 +107,13 @@ then
     -srckeystore /opt/tplink/EAPController/keystore/cert.p12 \
     -srcstoretype PKCS12 \
     -srcstorepass tplink
+fi
+
+# re-enable disabled TLS versions 1.0 & 1.1
+if [ "${TLS_1_11_ENABLED}" = "true" ]
+then
+  echo "INFO: Re-enabling TLS 1.0 & 1.1"
+  sed -i 's#^jdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1,#jdk.tls.disabledAlgorithms=SSLv3,#' /etc/java-8-openjdk/security/java.security
 fi
 
 # see if any of these files exist; if so, do not start as they are from older versions

@@ -1,12 +1,14 @@
 # mbentley/omada-controller
 
-docker image based off of ubuntu:18.04 for [TP-Link Omada Controller](https://www.tp-link.com/en/products/details/EAP-Controller.html) to control [TP-Link Omada EAP Series Wireless Access Points](https://www.tp-link.com/en/omada/)
+docker image based off of ubuntu:18.04 for [TP-Link Omada Controller](https://www.tp-link.com/us/business-networking/omada-sdn-controller/) to control [TP-Link Omada Hardware](https://www.tp-link.com/en/business-networking/all-omada/)
 
 ## Tags
 
 ### Tags for `amd64`
 
-* `latest`, `4.2` - Omada Controller 4.2.x (currently 4.2.11)
+* `latest`, `4.4` - Omada Controller 4.4.x (currently 4.4.3)
+* `4.3` - Omada Controller 4.3.x (currently 4.3.5)
+* `4.2` - Omada Controller 4.2.x (currently 4.2.11)
 * `4.1` - Omada Controller 4.1.x (currently 4.1.5)
 * `3.2` - Omada Controller 3.2.x (currently 3.2.14)
 * `3.1` - Omada Controller 3.1.x (currently 3.1.13)
@@ -14,13 +16,17 @@ docker image based off of ubuntu:18.04 for [TP-Link Omada Controller](https://ww
 
 ### Tags for `armv7l`
 
-* `latest-armv7l`, `4.2-armv7l` - Omada Controller 4.2.x (currently 4.2.11)
+* `latest-armv7l`, `4.4-armv7l` - Omada Controller 4.4.x (currently 4.4.3)
+* `4.3-armv7l` - Omada Controller 4.3.x (currently 4.3.5)
+* `4.2-armv7l` - Omada Controller 4.2.x (currently 4.2.11)
 * `4.1-armv7l` - Omada Controller 4.1.x (currently 4.1.5)
 * `3.2-armv7l` - Omada Controller 3.2.x (currently 3.2.14)
 
 ### Tags for `arm64`
 
-* `latest-arm64`, `4.2-arm64` - Omada Controller 4.2.x (currently 4.2.11)
+* `latest-arm64`, `4.4-arm64` - Omada Controller 4.4.x (currently 4.4.3)
+* `4.3-arm64` - Omada Controller 4.3.x (currently 4.3.5)
+* `4.2-arm64` - Omada Controller 4.2.x (currently 4.2.11)
 * `4.1-arm64` - Omada Controller 4.1.x (currently 4.1.5)
 * `3.2-arm64` - Omada Controller 3.2.x (currently 3.2.14)
 
@@ -28,7 +34,7 @@ docker image based off of ubuntu:18.04 for [TP-Link Omada Controller](https://ww
 
 If you have issues running the controller, feel free to [file an issue](https://github.com/mbentley/docker-omada-controller/issues/new) and I will help as I can.  If you are specifically having a problem that is related to the actual software, I would suggest filing an issue on the [TP-Link community forums](https://community.tp-link.com/en/business/forum/582) as I do not have access to source code to debug those issues.  If you're not sure where the problem might be, I can help determine if it is a running in Docker issue or a software issue.
 
-## Upgrading to 4.1
+## Upgrading to 4.1 from 3.2.10 or below
 
 <details>
 <summary>Click to expand upgrade instructions and 4.1 usage notes</summary>
@@ -44,7 +50,7 @@ The upgrade to the 4.1.x version is not a seamless upgrade and can't be done in 
 
 ## Notes for 4.1
 
-1. **Ports** - Do not change the ports for the controller or portal in the UI to ports below 1024 unless you have adjusted the unprivileged ports; for ports < 1024, see [Unprivileged Ports](#unprivileged-ports).  If you change the default port for the management interface, you should also either disable the container health check or update it to the new port.
+1. **Ports** - Do not change the ports for the controller or portal in the UI to ports below 1024 unless you have adjusted the unprivileged ports; for ports < 1024, see [Unprivileged Ports](#unprivileged-ports).
 1. **SSL Certificates** - if you are installing your own SSL certificates, you should only manage them using one method - through the UI or by using the `/cert` volume as [described below](#custom-certificates).
 1. **Synology Users** - if you're using a Synology and are using the `latest` tag and update to 4.1, you will need to make sure to re-create the container due to the `CMD` changing from older versions to 4.1 as Synology retains the entrypoint and command from the container as it is defined and not from the image.
 
@@ -62,7 +68,7 @@ As of the Omada Controller version 4.2.x, the Dockerfiles have been simplified s
   No build args required; set for the default build-args
 
   ```
-  docker build -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.2 .
+  docker build -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.3 .
   ```
 
 ### `arm64`
@@ -70,7 +76,7 @@ As of the Omada Controller version 4.2.x, the Dockerfiles have been simplified s
   Only the `ARCH` build-arg is required
 
   ```
-  docker build --build-arg ARCH="arm64" -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.2-arm64 .
+  docker build --build-arg ARCH="arm64" -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.3-arm64 .
   ```
 
 ### `armv7l`
@@ -78,15 +84,24 @@ As of the Omada Controller version 4.2.x, the Dockerfiles have been simplified s
   Both the `ARCH` and `BASE` build-args are required
 
   ```
-  docker build --build-arg ARCH="armv7l" --build-arg BASE="ubuntu:16.04" -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.2-armv7l .
+  docker build --build-arg ARCH="armv7l" --build-arg BASE="ubuntu:16.04" -f Dockerfile.v4.2.x -t mbentley/omada-controller:4.3-armv7l .
   ```
+
 </details>
 
 ## Example usage
 
 To run this Docker image and keep persistent data in named volumes:
 
+### Using non-default ports
+
+__tl;dr__: Always make sure the environment variables for the ports match any changes you have made in the web UI and you'll be fine.
+
+If you want to change the ports of your Omada Controller to something besides the defaults, there is some unexpected behavior that the controller exhibits.  There are two sets of ports: one for HTTP/HTTPS for the controller itself and another for HTTP/HTTPS for the captive portal, typically used for authentication to a guest network.  The controller's set of ports, which are set by the `MANAGE_*_PORT` environment variables, can only be modified using the environment variables on the first time the controller is started.  If persistent data exists, changing the controller's ports via environment variables will have no effect on the controller itself and can only be modified through the web UI.  On the other hand, the portal ports will always be set to whatever has been set in the environment variables, which are set by the `PORTAL_*_PORT` environment variables.
+
 ### Using port mapping
+
+__Warning__: If you want to change the controller ports from the default mappings, you *absolutely must* update the port binding inside the container via the environment variables.  The ports exposed must match what is inside the container.  The Omada Controller software expects that the ports are the same inside the container and outside and will load a blank page if that is not done.  See [#99](https://github.com/mbentley/docker-omada-controller/issues/99#issuecomment-821243857) for details and and example of the behavior.
 
 ```
 docker run -d \
@@ -115,7 +130,7 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.2
+  mbentley/omada-controller:4.3
 ```
 
 ### Using `net=host`
@@ -137,7 +152,7 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.2
+  mbentley/omada-controller:4.3
 ```
 
 <details>
@@ -172,7 +187,7 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.2-armv7l
+  mbentley/omada-controller:4.3-armv7l
 ```
 
 ### Using `net=host`
@@ -194,8 +209,9 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.2-armv7l
+  mbentley/omada-controller:4.3-armv7l
 ```
+
 </details>
 
 <details>
@@ -230,7 +246,7 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.2-arm64
+  mbentley/omada-controller:4.3-arm64
 ```
 
 ### Using `net=host`
@@ -252,10 +268,10 @@ docker run -d \
   -v omada-data:/opt/tplink/EAPController/data \
   -v omada-work:/opt/tplink/EAPController/work \
   -v omada-logs:/opt/tplink/EAPController/logs \
-  mbentley/omada-controller:4.2-arm64
+  mbentley/omada-controller:4.3-arm64
 ```
-</details>
 
+</details>
 
 ## Optional Variables
 
@@ -270,18 +286,20 @@ docker run -d \
 | `SMALL_FILES` | `false` | `[true\|false]` | See [Small Files](#small-files) for more detail; deprecated in 4.1.x |
 | `SSL_CERT_NAME` | `tls.crt` | _any_ | Name of the public cert chain mounted to `/cert`; see [Custom Certificates](#custom-certificates) |
 | `SSL_KEY_NAME` | `tls.key` | _any_ | Name of the private cert mounted to `/cert`; see [Custom Certificates](#custom-certificates) |
+| `TLS_1_11_ENABLED` | `false` | `[true\|false]` | Re-enables TLS 1.0 & 1.1 if set to `true` for 4.1.x and above |
 | `TZ` | `Etc/UTC` | _\<many\>_ | See [Time Zones](#time-zones) for more detail |
-
 
 ## Persistent Data and Permissions
 
-**Note**: This only applies to tags for `3.1.x` and `3.0.x` as the `3.2.x` and newer versions manage the permissions for you.
+**Note**: The permissions portion only applies to tags for `3.1.x` and `3.0.x` as the `3.2.x` and newer versions manage the permissions for you.
 
 If you utilize bind mounts instead of Docker named volumes (e.g. - `-v /path/to/data:/opt/tplink/EAPController/data`) in your run command, you will want to make sure that you have set the permissions appropriately on the filesystem otherwise you will run into permissions errors and the container will not run because it won't have the permissions to write data since this container uses a non-root user.  To resolve that, you need to `chown` the directory to `508:508` on the host as that is the UID and GID that we use inside the container.  For example:
 
 ```
 chown -R 508:508 /data/omada/data /data/omada/work /data/omada/logs
 ```
+
+In the examples, there are three directories where persistent data is stored: `data`, `work`, and `logs`.  The `data` directory is where the persistent database data is stored where all of your settings, app configuration, etc is stored.  The `work` directory is where the web application is extracted to and is just ephemeral data that is replaced on each run.  The `log` directory is where logs are written and stored.  I would suggest that you use a bind mounted volume for the `data` directory to ensure that your persistent data is directly under your control and of course take regular backups within the Omada Controller application itself.
 
 ## Custom Certificates
 
